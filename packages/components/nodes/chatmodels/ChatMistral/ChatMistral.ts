@@ -1,6 +1,6 @@
 import { BaseCache } from '@langchain/core/caches'
 import { ChatMistralAI, ChatMistralAIInput } from '@langchain/mistralai'
-import { ICommonObject, INode, INodeData, INodeOptionsValue, INodeParams } from '../../../src/Interface'
+import { ICommonObject, INode, INodeData, INodeOptionsValue, INodeParams, IMultiModalOption } from '../../../src/Interface'
 import { getBaseClasses, getCredentialData, getCredentialParam } from '../../../src/utils'
 import { getModels, MODEL_TYPE } from '../../../src/modelLoader'
 
@@ -135,7 +135,7 @@ class ChatMistral_ChatModels implements INode {
 
         const cache = nodeData.inputs?.cache as BaseCache;
 
-        const obj: ChatMistralInput & BaseChatModelParams = {
+        const obj: ChatMistralAIInput & BaseChatModelParams = {
             modelName,
             temperature: parseFloat(temperature),
             streaming: streaming ?? true,
@@ -146,7 +146,14 @@ class ChatMistral_ChatModels implements INode {
         if (maxOutputTokens) obj.maxOutputTokens = parseFloat(maxOutputTokens);
         if (cache) obj.cache = cache;
 
-        const model = new ChatMistral(nodeData.id, obj);
+        const multiModalOption: IMultiModalOption = {
+            image: {
+                allowImageUploads: allowImageUploads ?? false
+            }
+        };
+
+        const model = new ChatMistralAI(nodeData.id, obj);
+        model.setMultiModalOption(multiModalOption);
         return model;
     }
 }
