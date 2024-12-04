@@ -1,6 +1,6 @@
 import { BaseCache } from '@langchain/core/caches'
 import { ChatMistralAI, ChatMistralAIInput } from '@langchain/mistralai'
-import { ICommonObject, INode, INodeData, INodeOptionsValue, INodeParams, IMultiModalOption } from '../../../src/Interface'
+import { ICommonObject, INode, INodeData, INodeOptionsValue, INodeParams } from '../../../src/Interface'
 import { getBaseClasses, getCredentialData, getCredentialParam } from '../../../src/utils'
 import { getModels, MODEL_TYPE } from '../../../src/modelLoader'
 
@@ -56,15 +56,6 @@ class ChatMistral_ChatModels implements INode {
                 optional: true
             },
             {
-                label: 'Allow Image Uploads',
-                name: 'allowImageUploads',
-                type: 'boolean',
-                description:
-                    'Allow image input. Refer to the <a href="https://docs.flowiseai.com/using-flowise/uploads#image" target="_blank">docs</a> for more details.',
-                default: false,
-                optional: true
-            },
-            {
                 label: 'Streaming',
                 name: 'streaming',
                 type: 'boolean',
@@ -95,7 +86,7 @@ class ChatMistral_ChatModels implements INode {
                 label: 'Random Seed',
                 name: 'randomSeed',
                 type: 'number',
-                description: 'Random seed for reproducibility.',
+                description: 'The seed to use for random sampling. If set, different calls will generate deterministic results.',
                 step: 1,
                 optional: true,
                 additionalParams: true
@@ -125,36 +116,37 @@ class ChatMistral_ChatModels implements INode {
         }
     }
 
-    async init(nodeData: INodeData): Promise<any> {
-        const temperature = nodeData.inputs?.temperature as string;
-        const modelName = nodeData.inputs?.modelName as string;
-        const topP = nodeData.inputs?.topP as string;
-        const maxOutputTokens = nodeData.inputs?.maxOutputTokens as string;
-        const streaming = nodeData.inputs?.streaming as boolean;
-        const allowImageUploads = nodeData.inputs?.allowImageUploads as boolean;
+    async init(nodeData: INodeData, _: string, options: ICommonObject): Promise<any> {
+        const credentialData = await getCredentialData(nodeData.credential ?? '', options)
+        const apiKey = getCredentialParam('mistralAIAPIKey', credentialData, nodeData)
 
-        const cache = nodeData.inputs?.cache as BaseCache;
+        const temperature = nodeData.inputs?.temperature as string
+        const modelName = nodeData.inputs?.modelName as string
+        const maxOutputTokens = nodeData.inputs?.maxOutputTokens as string
+        const topP = nodeData.inputs?.topP as string
+        const safeMode = nodeData.inputs?.safeMode as boolean
+        const randomSeed = nodeData.inputs?.safeMode as string
+        const overrideEndpoint = nodeData.inputs?.overrideEndpoint as string
+        const streaming = nodeData.inputs?.streaming as boolean
+        const cache = nodeData.inputs?.cache as BaseCache
 
-        const obj: ChatMistralAIInput & BaseChatModelParams = {
-            modelName,
-            temperature: parseFloat(temperature),
-            streaming: streaming ?? true,
-            allowImageUploads: allowImageUploads ?? false
-        };
+        const obj: ChatMistralAIInput = {
+            apiKey: apiKey,
+            modelName: modelName,
+            streaming: streaming ?? true
+        }
 
-        if (topP) obj.topP = parseFloat(topP);
-        if (maxOutputTokens) obj.maxOutputTokens = parseFloat(maxOutputTokens);
-        if (cache) obj.cache = cache;
+        if (maxOutputTokens) obj.maxTokens = parseInt(maxOutputTokens, 10)
+        if (topP) obj.topP = parseFloat(topP)
+        if (cache) obj.cache = cache
+        if (temperature) obj.temperature = parseFloat(temperature)
+        if (randomSeed) obj.randomSeed = parseFloat(randomSeed)
+        if (safeMode) obj.safeMode = safeMode
+        if (overrideEndpoint) obj.endpoint = overrideEndpoint
 
-        const multiModalOption: IMultiModalOption = {
-            image: {
-                allowImageUploads: allowImageUploads ?? false
-            }
-        };
+        const model = new ChatMistralAI(obj)
 
-        const model = new ChatMistralAI(nodeData.id, obj);
-        model.setMultiModalOption(multiModalOption);
-        return model;
+        return model
     }
 }
 
