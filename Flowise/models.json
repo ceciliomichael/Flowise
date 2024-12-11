@@ -806,6 +806,10 @@
                     "name": "mistral-large-latest"
                 },
                 {
+                    "label": "pixtral-large-latest",
+                    "name": "pixtral-large-latest"
+                },
+                {
                     "label": "mistral-large-2402",
                     "name": "mistral-large-2402"
                 }
